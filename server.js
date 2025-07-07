@@ -11,20 +11,16 @@ import { z } from "zod";
 
 dotenv.config();
 
-const connections = {
-  app: express(),
-  transport: null,
-  server: new McpServer({
-    name: "mcp-farma-access",
-    version: "1.0.0",
-  }),
-  redisClient: redis.createClient({ url: process.env.REDIS_URL }),
-  pineconNamespace: new Pinecone({ apiKey: process.env.PINECONE_API_KEY })
-    .index("produtos", process.env.PINECONE_INDEX_HOST_URL)
-    .namespace("produtos"),
-};
-
-const { app, transport, server, redisClient, pineconNamespace } = connections;
+const app = express();
+let transport = null;
+const server = new McpServer({
+  name: "mcp-farma-access",
+  version: "1.0.0",
+});
+const redisClient = redis.createClient({ url: process.env.REDIS_URL });
+const pineconNamespace = new Pinecone({ apiKey: process.env.PINECONE_API_KEY })
+  .index("produtos", process.env.PINECONE_INDEX_HOST_URL)
+  .namespace("produtos");
 
 server.tool(
   // Product Similarity Search with Text Embeddings on a Vector Database
