@@ -1,35 +1,40 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { Pinecone } from "@pinecone-database/pinecone";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import express from "express";
-import { z } from "zod";
+
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
+import { Pinecone } from "@pinecone-database/pinecone";
+import redis from "redis";
+
 import dotenv from "dotenv";
+import { z } from "zod";
 
 dotenv.config();
 
-// Initialize Pinecone
-const pc = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY,
-});
-const namespace = pc
-  .index("produtos", process.env.PINECONE_INDEX_HOST_URL)
-  .namespace("produtos");
+const connections = {
+  app: express(),
+  transport: null,
+  server: new McpServer({
+    name: "mcp-farma-access",
+    version: "1.0.0",
+  }),
+  redisClient: redis.createClient({ url: process.env.REDIS_URL }),
+  pineconNamespace: new Pinecone({ apiKey: process.env.PINECONE_API_KEY })
+    .index("produtos", process.env.PINECONE_INDEX_HOST_URL)
+    .namespace("produtos"),
+};
 
-// Create the MCP server
-const server = new McpServer({
-  name: "mcp-farma-access",
-  version: "1.0.0",
-});
+const { app, transport, server, redisClient, pineconNamespace } = connections;
 
-// Register the pinecone tool
 server.tool(
+  // Product Similarity Search with Text Embeddings on a Vector Database
   "query_products",
-  "This tool accesses a vector database to provide knowledge about products. The tool returns a list of 10 products that match the query.",
+  "This tool accesses a vector database to provide knowledge about products. The tool returns a list of 10 products that match the query, it includes Produto_id, prices and other information.",
   {
     query: z.string().describe("The query to search for products."),
   },
   async ({ query }) => {
-    const response = await namespace.searchRecords({
+    const response = await pineconNamespace.searchRecords({
       query: {
         topK: 10,
         inputs: { text: query },
@@ -43,10 +48,35 @@ server.tool(
   }
 );
 
-// Initialize web server
-const app = express();
+server.tool(
+  // Product Inventory Query with Real Time Data on Redis
+  "product_inventory",
+  "This tool accesses a redis database to provide the real time inventory of a product. The id must be the Produto_id from the database.",
+  {
+    product_id: z.string().describe("The product id to search for."),
+  },
+  async ({ product_id }) => {
+    const response = await redisClient.get(product_id);
+    return {
+      content: [{ type: "text", text: JSON.stringify(response) }],
+    };
+  }
+);
 
-let transport = null;
+server.tool(
+  // Product Inventory Query with Real Time Data on Redis
+  "many_products_inventory",
+  "This tool accesses a redis database to provide the real time inventory of many products. The id must be the Produto_id from the database.",
+  {
+    product_ids: z.array(z.string()).describe("The product ids to search for."),
+  },
+  async ({ product_ids }) => {
+    const response = await redisClient.mGet(product_ids);
+    return {
+      content: [{ type: "text", text: JSON.stringify(response) }],
+    };
+  }
+);
 
 app.get("/sse", async (req, res) => {
   transport = new SSEServerTransport("/messages", res);

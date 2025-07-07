@@ -1,11 +1,8 @@
 build:
-	docker build --no-cache -t mcp-farma-access .
+	-@docker build --no-cache -t mcp-farma-access .
 
 run:
-	docker run -p 6937:6937 mcp-farma-access
+	-@docker run -p 6937:6937 mcp-farma-access
 
-stop:
-	docker stop mcp-farma-access
-
-clean:
-	docker rm mcp-farma-access
+rmi:
+	-@docker image rm mcp-farma-access
