@@ -1,0 +1,19 @@
+{
+  "name": "mcp-farma-access",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "serve": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.0",
+    "@pinecone-database/pinecone": "^6.1.1",
+    "dotenv": "^17.0.1",
+    "express": "^5.1.0"
+  }
+}
