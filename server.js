@@ -59,20 +59,20 @@ server.tool(
   }
 );
 
-server.tool(
-  // Product Inventory Query with Real Time Data on Redis
-  "many_products_inventory",
-  "This tool accesses a redis database to provide the real time inventory of many products. The id must be the Produto_id from the database.",
-  {
-    product_ids: z.array(z.string()).describe("The product ids to search for."),
-  },
-  async ({ product_ids }) => {
-    const response = await redisClient.mGet(product_ids);
-    return {
-      content: [{ type: "text", text: JSON.stringify(response) }],
-    };
-  }
-);
+// server.tool(
+//   // Product Inventory Query with Real Time Data on Redis
+//   "many_products_inventory",
+//   "This tool accesses a redis database to provide the real time inventory of many products. The id must be the Produto_id from the database.",
+//   {
+//     product_ids: z.array(z.string()).describe("The product ids to search for."),
+//   },
+//   async ({ product_ids }) => {
+//     const response = await redisClient.mGet(product_ids);
+//     return {
+//       content: [{ type: "text", text: JSON.stringify(response) }],
+//     };
+//   }
+// );
 
 app.get("/sse", async (req, res) => {
   transport = new SSEServerTransport("/messages", res);
